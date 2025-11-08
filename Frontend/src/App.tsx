@@ -17,6 +17,9 @@ import PayrollRun from "./pages/PayrollRun";
 import Payslips from "./pages/Payslips";
 import NotFound from "./pages/NotFound";
 
+// Import API test utility for debugging
+import "./utils/apiTest";
+
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
@@ -63,12 +66,17 @@ const AppRoutes = () => {
       />
       
       <Route 
-        path="/employees" 
+        path="/directory" 
         element={
           <ProtectedRoute>
             <Directory />
           </ProtectedRoute>
         } 
+      />
+      
+      <Route 
+        path="/employees" 
+        element={<Navigate to="/directory" replace />}
       />
       
       <Route 

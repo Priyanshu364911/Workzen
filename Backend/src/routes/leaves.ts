@@ -4,6 +4,7 @@ import { authenticate, restrictTo } from '../middleware/auth';
 import {
   validateApplyLeave,
   validateReviewLeave,
+  validateApproveRejectLeave,
   validateUpdateLeave,
   validateGetLeaveQuery,
   validateAllocateLeave,
@@ -32,9 +33,9 @@ router.get('/user/:userId', validateGetLeaveQuery, LeaveController.getUserLeaves
 // Delete leave (Admin can delete any, others can delete own pending)
 router.delete('/:id', LeaveController.deleteLeave);
 
-// Payroll Officer routes (can approve/reject leaves)
-router.put('/:id/approve', restrictTo('Admin', 'Payroll Officer'), validateReviewLeave, LeaveController.approveLeave);
-router.put('/:id/reject', restrictTo('Admin', 'Payroll Officer'), validateReviewLeave, LeaveController.rejectLeave);
+// Admin/HR/Payroll Officer routes (can approve/reject leaves)
+router.put('/:id/approve', restrictTo('Admin', 'HR Officer', 'Payroll Officer'), validateApproveRejectLeave, LeaveController.approveLeave);
+router.put('/:id/reject', restrictTo('Admin', 'HR Officer', 'Payroll Officer'), validateApproveRejectLeave, LeaveController.rejectLeave);
 router.get('/pending/list', restrictTo('Admin', 'HR Officer', 'Payroll Officer'), LeaveController.getPendingLeaves);
 
 // Admin/HR only routes

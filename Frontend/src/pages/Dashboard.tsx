@@ -18,13 +18,8 @@ const Dashboard = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await DashboardService.getDashboardData();
-        
-        if (response.success) {
-          setDashboardData(response.data.stats);
-        } else {
-          throw new Error('Failed to fetch dashboard data');
-        }
+        const dashboardData = await DashboardService.getDashboardData();
+        setDashboardData(dashboardData.stats);
       } catch (error: any) {
         console.error('Dashboard data fetch error:', error);
         const errorMessage = error.response?.data?.error?.message || 'Failed to load dashboard data';

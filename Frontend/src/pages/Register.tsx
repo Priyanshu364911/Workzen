@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, Role } from '@/context/AuthContext';
+import { Role } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import Sidebar from '@/components/Sidebar';
+import UserManagementService from '@/services/userManagementService';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -14,32 +16,65 @@ const Register = () => {
     email: '',
     password: '',
     role: '' as Role | '',
-    basicSalary: ''
+    basicSalary: '',
+    department: '',
+    position: ''
   });
-  const { register } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.email || !formData.password || !formData.role || !formData.basicSalary) {
-      toast.error('Please fill in all fields');
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
       return;
     }
 
-    const success = register({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role as Role,
-      basicSalary: parseFloat(formData.basicSalary)
-    });
+    setIsSubmitting(true);
+    try {
+      const newUser = await UserManagementService.createUser({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role as Role,
+        basicSalary: parseFloat(formData.basicSalary),
+        department: formData.department || undefined,
+        position: formData.position || undefined
+      });
 
-    if (success) {
-      toast.success('User registered successfully!');
-      navigate('/employees');
-    } else {
-      toast.error('Registration failed');
+      toast({
+        title: "Success",
+        description: `User ${newUser.name} registered successfully!`,
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        role: '',
+        basicSalary: '',
+        department: '',
+        position: ''
+      });
+
+      // Navigate back to admin dashboard
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      toast({
+        title: "Registration Failed",
+        description: error.message || "Failed to register user",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -107,8 +142,30 @@ const Register = () => {
                   </Select>
                 </div>
 
+                <div>
+                  <Label htmlFor="department">Department (Optional)</Label>
+                  <Input
+                    id="department"
+                    value={formData.department}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    placeholder="Engineering"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="position">Position (Optional)</Label>
+                  <Input
+                    id="position"
+                    value={formData.position}
+                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                    placeholder="Software Developer"
+                    className="mt-1"
+                  />
+                </div>
+
                 <div className="col-span-2">
-                  <Label htmlFor="salary">Basic Salary (₹)</Label>
+                  <Label htmlFor="salary">Basic Salary (₹) *</Label>
                   <Input
                     id="salary"
                     type="number"
@@ -116,19 +173,28 @@ const Register = () => {
                     onChange={(e) => setFormData({ ...formData, basicSalary: e.target.value })}
                     placeholder="50000"
                     className="mt-1"
+                    required
                   />
                 </div>
               </div>
 
               <div className="flex gap-4">
-                <Button type="submit" className="flex-1">
-                  Register User
+                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Registering...
+                    </>
+                  ) : (
+                    'Register User'
+                  )}
                 </Button>
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => navigate('/employees')}
+                  onClick={() => navigate('/dashboard')}
                   className="flex-1"
+                  disabled={isSubmitting}
                 >
                   Cancel
                 </Button>

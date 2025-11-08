@@ -44,7 +44,7 @@ export class PayrollCalculator {
     });
 
     // Calculate present days
-    const presentDays = attendanceRecords.filter(record => 
+    const presentDays = attendanceRecords.filter(record =>
       ['Present', 'Late', 'Half Day'].includes(record.status)
     ).length;
 
@@ -64,7 +64,7 @@ export class PayrollCalculator {
     for (const leave of approvedLeaves) {
       const leaveStart = new Date(Math.max(leave.from.getTime(), startDate.getTime()));
       const leaveEnd = new Date(Math.min(leave.to.getTime(), endDate.getTime()));
-      
+
       if (leaveStart <= leaveEnd) {
         const days = Math.ceil((leaveEnd.getTime() - leaveStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
         paidLeaveDays += days;
@@ -146,7 +146,7 @@ export class PayrollCalculator {
   ): Promise<PayrollCalculationResult[]> {
     const activeUsers = await User.find({ isActive: true }).select('_id');
     const userIds = activeUsers.map(user => user._id.toString());
-    
+
     return PayrollCalculator.calculateBulkPayroll(userIds, month, workingDays);
   }
 

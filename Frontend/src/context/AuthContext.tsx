@@ -19,6 +19,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   register: (userData: Omit<User, '_id'> & { password: string }) => Promise<boolean>;
+  registerUser: (userData: Omit<User, '_id'> & { password: string }) => Promise<User>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -97,8 +98,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Register a new user without changing current session (for admin use)
+  const registerUser = async (userData: Omit<User, '_id'> & { password: string }): Promise<User> => {
+    try {
+      const authResponse = await AuthService.register(userData);
+      // Don't change the current user session, just return the created user
+      return authResponse.user;
+    } catch (error) {
+      console.error('User registration error:', error);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register, registerUser }}>
       {children}
     </AuthContext.Provider>
   );

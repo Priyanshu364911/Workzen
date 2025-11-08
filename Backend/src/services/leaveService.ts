@@ -227,8 +227,8 @@ export class LeaveService {
     // Execute queries
     const [leaves, totalRecords] = await Promise.all([
       Leave.find(filter)
-        .populate('userId', 'name email department position')
-        .populate('reviewedBy', 'name email')
+        .populate('user', 'name email department position')
+        .populate('reviewer', 'name email')
         .sort(sort)
         .skip(skip)
         .limit(limit),
@@ -254,8 +254,8 @@ export class LeaveService {
    */
   static async getLeaveById(leaveId: string): Promise<ILeave> {
     const leave = await Leave.findById(leaveId)
-      .populate('userId', 'name email department position')
-      .populate('reviewedBy', 'name email');
+      .populate('user', 'name email department position')
+      .populate('reviewer', 'name email');
     
     if (!leave) {
       throw new AppError('Leave application not found', 404);
@@ -298,8 +298,8 @@ export class LeaveService {
         new: true,
         runValidators: true
       }
-    ).populate('userId', 'name email department position')
-     .populate('reviewedBy', 'name email');
+    ).populate('user', 'name email department position')
+     .populate('reviewer', 'name email');
 
     return updatedLeave!;
   }

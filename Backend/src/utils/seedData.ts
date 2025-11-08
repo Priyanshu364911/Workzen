@@ -81,7 +81,11 @@ export const seedUsers = async (): Promise<any[]> => {
       }
     ];
 
-    const createdUsers = await User.insertMany(seedUsers);
+    const createdUsers = [];
+    for (const userData of seedUsers) {
+      const user = await User.create(userData);
+      createdUsers.push(user);
+    }
     console.log('✅ Seed users created successfully');
     
     return createdUsers;
@@ -172,11 +176,15 @@ export const seedSampleLeaves = async (users: any[]): Promise<void> => {
         const leaveTypes = ['Sick', 'Casual', 'Earned'];
         const statuses = ['Pending', 'Approved', 'Rejected'];
         
+        const toDate = new Date(futureDate.getTime() + Math.floor(Math.random() * 3) * 24 * 60 * 60 * 1000);
+        const totalDays = Math.ceil((toDate.getTime() - futureDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        
         leaveRecords.push({
           userId: employee._id,
           type: leaveTypes[Math.floor(Math.random() * leaveTypes.length)],
           from: futureDate,
-          to: new Date(futureDate.getTime() + Math.floor(Math.random() * 3) * 24 * 60 * 60 * 1000),
+          to: toDate,
+          totalDays: totalDays,
           reason: 'Sample leave request for testing purposes',
           status: statuses[Math.floor(Math.random() * statuses.length)],
           appliedAt: new Date()

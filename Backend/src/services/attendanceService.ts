@@ -176,7 +176,7 @@ export class AttendanceService {
     // Execute queries
     const [attendance, totalRecords] = await Promise.all([
       Attendance.find(filter)
-        .populate('userId', 'name email department position')
+        .populate('user', 'name email department position')
         .sort(sort)
         .skip(skip)
         .limit(limit),
@@ -202,7 +202,7 @@ export class AttendanceService {
    */
   static async getAttendanceById(attendanceId: string): Promise<IAttendance> {
     const attendance = await Attendance.findById(attendanceId)
-      .populate('userId', 'name email department position');
+      .populate('user', 'name email department position');
     
     if (!attendance) {
       throw new AppError('Attendance record not found', 404);

@@ -29,13 +29,8 @@ const Attendance = () => {
       setError(null);
       
       const params = user?.role === 'Employee' ? { userId: user._id } : {};
-      const response = await AttendanceService.getAttendanceLogs(params);
-      
-      if (response.success) {
-        setAttendanceData(response.data.attendance);
-      } else {
-        throw new Error('Failed to fetch attendance data');
-      }
+      const attendanceResponse = await AttendanceService.getAttendanceLogs(params);
+      setAttendanceData(attendanceResponse.attendance);
     } catch (error: any) {
       console.error('Attendance fetch error:', error);
       const errorMessage = error.response?.data?.error?.message || 'Failed to load attendance data';
@@ -52,10 +47,8 @@ const Attendance = () => {
 
   const fetchAttendanceStatus = async () => {
     try {
-      const response = await AttendanceService.getCurrentStatus();
-      if (response.success) {
-        setAttendanceStatus(response.data);
-      }
+      const statusResponse = await AttendanceService.getCurrentStatus();
+      setAttendanceStatus(statusResponse);
     } catch (error: any) {
       console.error('Attendance status fetch error:', error);
     }
@@ -66,14 +59,12 @@ const Attendance = () => {
       setIsCheckingIn(true);
       const response = await AttendanceService.checkIn({});
       
-      if (response.success) {
-        toast({
-          title: "Check-in Successful",
-          description: response.message,
-        });
-        await fetchAttendanceStatus();
-        await fetchAttendanceData();
-      }
+      toast({
+        title: "Check-in Successful",
+        description: response.message,
+      });
+      await fetchAttendanceStatus();
+      await fetchAttendanceData();
     } catch (error: any) {
       console.error('Check-in error:', error);
       const errorMessage = error.response?.data?.error?.message || 'Check-in failed';
@@ -92,14 +83,12 @@ const Attendance = () => {
       setIsCheckingOut(true);
       const response = await AttendanceService.checkOut({});
       
-      if (response.success) {
-        toast({
-          title: "Check-out Successful",
-          description: response.message,
-        });
-        await fetchAttendanceStatus();
-        await fetchAttendanceData();
-      }
+      toast({
+        title: "Check-out Successful",
+        description: response.message,
+      });
+      await fetchAttendanceStatus();
+      await fetchAttendanceData();
     } catch (error: any) {
       console.error('Check-out error:', error);
       const errorMessage = error.response?.data?.error?.message || 'Check-out failed';

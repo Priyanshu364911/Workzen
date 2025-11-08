@@ -56,6 +56,18 @@ export const reviewLeaveSchema = Joi.object({
     })
 });
 
+// Approve/Reject leave schema (for specific endpoints)
+export const approveRejectLeaveSchema = Joi.object({
+  reviewComments: Joi.string()
+    .trim()
+    .max(500)
+    .optional()
+    .allow('')
+    .messages({
+      'string.max': 'Review comments cannot be more than 500 characters'
+    })
+});
+
 // Update leave schema (Admin/HR only)
 export const updateLeaveSchema = Joi.object({
   type: Joi.string()
@@ -253,6 +265,7 @@ export const validateRequest = (schema: Joi.ObjectSchema, source: 'body' | 'quer
 // Specific validation middlewares
 export const validateApplyLeave = validateRequest(applyLeaveSchema);
 export const validateReviewLeave = validateRequest(reviewLeaveSchema);
+export const validateApproveRejectLeave = validateRequest(approveRejectLeaveSchema);
 export const validateUpdateLeave = validateRequest(updateLeaveSchema);
 export const validateGetLeaveQuery = validateRequest(getLeaveQuerySchema, 'query');
 export const validateAllocateLeave = validateRequest(allocateLeaveSchema);

@@ -38,13 +38,8 @@ const Leaves = () => {
       setError(null);
       
       const params = user?.role === 'Employee' ? { userId: user._id } : {};
-      const response = await LeaveService.getLeaves(params);
-      
-      if (response.success) {
-        setLeaves(response.data.leaves);
-      } else {
-        throw new Error('Failed to fetch leaves');
-      }
+      const leavesResponse = await LeaveService.getLeaves(params);
+      setLeaves(leavesResponse.leaves);
     } catch (error: any) {
       console.error('Leaves fetch error:', error);
       const errorMessage = error.response?.data?.error?.message || 'Failed to load leave data';
@@ -61,10 +56,8 @@ const Leaves = () => {
 
   const fetchLeaveBalance = async () => {
     try {
-      const response = await LeaveService.getLeaveBalance();
-      if (response.success) {
-        setLeaveBalance(response.data.balance);
-      }
+      const balanceResponse = await LeaveService.getLeaveBalance();
+      setLeaveBalance(balanceResponse.balance);
     } catch (error: any) {
       console.error('Leave balance fetch error:', error);
     }
@@ -86,16 +79,14 @@ const Leaves = () => {
       setIsSubmitting(true);
       const response = await LeaveService.applyLeave(formData);
       
-      if (response.success) {
-        toast({
-          title: "Success",
-          description: response.message,
-        });
-        setFormData({ type: '', from: '', to: '', reason: '' });
-        await fetchLeaves();
-        if (user?.role === 'Employee') {
-          await fetchLeaveBalance();
-        }
+      toast({
+        title: "Success",
+        description: response.message,
+      });
+      setFormData({ type: '', from: '', to: '', reason: '' });
+      await fetchLeaves();
+      if (user?.role === 'Employee') {
+        await fetchLeaveBalance();
       }
     } catch (error: any) {
       console.error('Leave application error:', error);
@@ -116,13 +107,11 @@ const Leaves = () => {
         ? await LeaveService.approveLeave(leaveId, reviewComments)
         : await LeaveService.rejectLeave(leaveId, reviewComments);
       
-      if (response.success) {
-        toast({
-          title: "Success",
-          description: response.message,
-        });
-        await fetchLeaves();
-      }
+      toast({
+        title: "Success",
+        description: response.message,
+      });
+      await fetchLeaves();
     } catch (error: any) {
       console.error('Leave action error:', error);
       const errorMessage = error.response?.data?.error?.message || `Failed to ${action} leave`;
