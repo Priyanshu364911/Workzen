@@ -50,6 +50,8 @@
   - Create Attendance model with check-in/check-out functionality
   - Build API endpoints for marking attendance and retrieving logs
   - Implement attendance calculation logic for working hours
+
+
   - Add validation for business hours and duplicate check-ins
   - Create attendance reporting services for HR and admin roles
   - Write unit tests for attendance services
@@ -57,6 +59,9 @@
 
 - [ ] 6. Build leave management system backend
   - Create Leave and LeaveBalance models with proper relationships
+
+
+
   - Implement leave application API with validation
   - Build leave approval/rejection workflow for payroll officers
   - Create leave balance tracking and allocation services
