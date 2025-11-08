@@ -16,12 +16,17 @@
   - Create User model with password hashing using bcrypt
   - Implement JWT token generation and validation middleware
   - Build login and registration API endpoints with input validation
+
+
   - Create protected route middleware for role-based access control
   - Write unit tests for authentication services
   - _Requirements: 1.1, 1.2, 1.3, 8.1, 8.5_
 
 - [ ] 3. Build user management backend services
   - Implement user CRUD operations with role-based permissions
+
+
+
   - Create user profile management endpoints
   - Build user listing and search functionality for admin/HR roles
   - Add input validation and sanitization for user data

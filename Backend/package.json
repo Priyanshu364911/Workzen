@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "seed": "ts-node src/utils/seedData.ts",
+    "init-db": "ts-node src/config/initDatabase.ts",
     "lint": "eslint src/**/*.ts",
     "test": "jest"
   },
