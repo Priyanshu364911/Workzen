@@ -1,46 +1,113 @@
 import { useAuth } from '@/context/AuthContext';
 import Sidebar from '@/components/Sidebar';
-import { Users, Calendar, FileText, Clock } from 'lucide-react';
-import { mockUsers, mockLeaves, mockPayslips, mockAttendance } from '@/data/mockData';
+import { Users, Calendar, FileText, Clock, Loader2, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useState, useEffect } from 'react';
+import DashboardService, { DashboardStats } from '@/services/dashboardService';
+import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await DashboardService.getDashboardData();
+        
+        if (response.success) {
+          setDashboardData(response.data.stats);
+        } else {
+          throw new Error('Failed to fetch dashboard data');
+        }
+      } catch (error: any) {
+        console.error('Dashboard data fetch error:', error);
+        const errorMessage = error.response?.data?.error?.message || 'Failed to load dashboard data';
+        setError(errorMessage);
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [toast]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !dashboardData) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-4" />
+            <p className="text-muted-foreground mb-4">{error || 'Failed to load dashboard data'}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const stats = [
     { 
       name: 'Total Employees', 
-      value: mockUsers.length, 
+      value: dashboardData.users.total, 
       icon: Users,
       color: 'bg-primary'
     },
     { 
       name: 'Pending Leaves', 
-      value: mockLeaves.filter(l => l.status === 'Pending').length, 
+      value: dashboardData.leaves.pending, 
       icon: Calendar,
       color: 'bg-secondary'
     },
     { 
-      name: 'Payslips Generated', 
-      value: mockPayslips.length, 
+      name: 'Payroll Processed', 
+      value: dashboardData.payroll.thisMonth.processed, 
       icon: FileText,
       color: 'bg-accent'
     },
     { 
       name: 'Present Today', 
-      value: mockAttendance.filter(a => a.status === 'Present').length, 
+      value: dashboardData.attendance.today.present, 
       icon: Clock,
       color: 'bg-primary'
     }
   ];
 
   // Chart data - employee count by role
-  const chartData = [
-    { role: 'Admin', count: mockUsers.filter(u => u.role === 'Admin').length },
-    { role: 'HR', count: mockUsers.filter(u => u.role === 'HR Officer').length },
-    { role: 'Payroll', count: mockUsers.filter(u => u.role === 'Payroll Officer').length },
-    { role: 'Employee', count: mockUsers.filter(u => u.role === 'Employee').length }
-  ];
+  const chartData = dashboardData.users.byRole.map(role => ({
+    role: role.role,
+    count: role.count
+  }));
 
   return (
     <div className="flex h-screen bg-background">
@@ -88,28 +155,34 @@ const Dashboard = () => {
 
           {/* Recent Activity */}
           <div className="mt-8 bg-card rounded-lg shadow-sm p-6 border border-border">
-            <h2 className="text-xl font-semibold mb-4 text-foreground">Recent Leave Requests</h2>
-            <div className="space-y-3">
-              {mockLeaves.slice(0, 3).map((leave) => {
-                const employee = mockUsers.find(u => u._id === leave.userId);
-                return (
-                  <div key={leave._id} className="flex items-center justify-between p-4 bg-accent rounded-lg">
-                    <div>
-                      <p className="font-medium text-accent-foreground">{employee?.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {leave.type} Leave • {leave.from} to {leave.to}
-                      </p>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      leave.status === 'Approved' ? 'bg-primary/20 text-primary' :
-                      leave.status === 'Rejected' ? 'bg-destructive/20 text-destructive' :
-                      'bg-secondary/20 text-secondary'
-                    }`}>
-                      {leave.status}
-                    </span>
-                  </div>
-                );
-              })}
+            <h2 className="text-xl font-semibold mb-4 text-foreground">Dashboard Summary</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-4 bg-accent rounded-lg">
+                <h3 className="font-medium text-accent-foreground mb-2">Attendance Today</h3>
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p>Present: {dashboardData.attendance.today.present}</p>
+                  <p>Absent: {dashboardData.attendance.today.absent}</p>
+                  <p>Late: {dashboardData.attendance.today.late}</p>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-accent rounded-lg">
+                <h3 className="font-medium text-accent-foreground mb-2">Leave Summary</h3>
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p>Pending: {dashboardData.leaves.pending}</p>
+                  <p>This Month: {dashboardData.leaves.thisMonth.total}</p>
+                  <p>Approved: {dashboardData.leaves.thisMonth.approved}</p>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-accent rounded-lg">
+                <h3 className="font-medium text-accent-foreground mb-2">Payroll Status</h3>
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p>Processed: {dashboardData.payroll.thisMonth.processed}</p>
+                  <p>Total Net: ₹{dashboardData.payroll.thisMonth.totalNet.toLocaleString()}</p>
+                  <p>Avg Salary: ₹{dashboardData.payroll.thisMonth.averageSalary.toLocaleString()}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

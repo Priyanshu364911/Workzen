@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import AuthService from '@/services/authService';
 
 export type Role = 'Admin' | 'HR Officer' | 'Payroll Officer' | 'Employee';
 
@@ -8,13 +9,16 @@ export interface User {
   email: string;
   role: Role;
   basicSalary: number;
+  department?: string;
+  position?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
-  register: (userData: Omit<User, '_id'> & { password: string }) => boolean;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  register: (userData: Omit<User, '_id'> & { password: string }) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,48 +33,72 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (email: string, password: string): boolean => {
-    // Import mock users (in real app, this would be an API call)
-    const mockUsers = [
-      { _id: "1", name: "Admin User", email: "admin@workzen.com", role: "Admin" as Role, basicSalary: 100000 },
-      { _id: "2", name: "Priya HR", email: "hr@workzen.com", role: "HR Officer" as Role, basicSalary: 80000 },
-      { _id: "3", name: "Raj Payroll", email: "payroll@workzen.com", role: "Payroll Officer" as Role, basicSalary: 75000 },
-      { _id: "4", name: "Amit Kumar", email: "amit@workzen.com", role: "Employee" as Role, basicSalary: 60000 },
-      { _id: "5", name: "Sneha Singh", email: "sneha@workzen.com", role: "Employee" as Role, basicSalary: 55000 }
-    ];
+  // Initialize auth state from localStorage
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const storedUser = AuthService.getStoredUser();
+        const storedToken = AuthService.getStoredToken();
 
-    const foundUser = mockUsers.find(u => u.email === email);
-    if (foundUser) {
-      setUser(foundUser);
-      localStorage.setItem('workzen_user', JSON.stringify(foundUser));
-      return true;
-    }
-    return false;
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('workzen_user');
-  };
-
-  const register = (userData: Omit<User, '_id'> & { password: string }): boolean => {
-    // In real app, this would call API
-    const newUser: User = {
-      _id: Date.now().toString(),
-      name: userData.name,
-      email: userData.email,
-      role: userData.role,
-      basicSalary: userData.basicSalary
+        if (storedUser && storedToken) {
+          // Verify token is still valid
+          try {
+            const verifiedUser = await AuthService.verifyToken();
+            setUser(verifiedUser);
+          } catch (error) {
+            // Token is invalid, clear storage
+            localStorage.removeItem('workzen_token');
+            localStorage.removeItem('workzen_user');
+            setUser(null);
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    
-    setUser(newUser);
-    localStorage.setItem('workzen_user', JSON.stringify(newUser));
-    return true;
+
+    initializeAuth();
+  }, []);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const authResponse = await AuthService.login({ email, password });
+      setUser(authResponse.user);
+      return true;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    }
+  };
+
+  const logout = async (): Promise<void> => {
+    try {
+      await AuthService.logout();
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear local state even if API call fails
+      setUser(null);
+    }
+  };
+
+  const register = async (userData: Omit<User, '_id'> & { password: string }): Promise<boolean> => {
+    try {
+      const authResponse = await AuthService.register(userData);
+      setUser(authResponse.user);
+      return true;
+    } catch (error) {
+      console.error('Registration error:', error);
+      return false;
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );

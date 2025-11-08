@@ -4,28 +4,53 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
-      toast.error('Please fill in all fields');
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
       return;
     }
 
-    const success = login(email, password);
-    if (success) {
-      toast.success('Login successful!');
-      navigate('/dashboard');
-    } else {
-      toast.error('Invalid credentials');
+    setIsLoading(true);
+    try {
+      const success = await login(email, password);
+      if (success) {
+        toast({
+          title: "Login Successful",
+          description: "Welcome to WorkZen HRMS!",
+        });
+        navigate('/dashboard');
+      } else {
+        toast({
+          title: "Login Failed",
+          description: "Invalid email or password",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Login Failed",
+        description: error.message || "An error occurred during login",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -65,8 +90,15 @@ const Login = () => {
               />
             </div>
 
-            <Button type="submit" className="w-full">
-              Sign In
+            <Button type="submit" className="w-full" disabled={isLoading || loading}>
+              {isLoading || loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing In...
+                </>
+              ) : (
+                'Sign In'
+              )}
             </Button>
           </form>
 
@@ -77,7 +109,8 @@ const Login = () => {
               <p>• HR: hr@workzen.com</p>
               <p>• Payroll: payroll@workzen.com</p>
               <p>• Employee: amit@workzen.com</p>
-              <p className="mt-2 italic">Password: any</p>
+              <p className="mt-2 italic">Password: password123</p>
+              <p className="mt-1 text-xs text-yellow-600">Note: Make sure the backend server is running on http://localhost:5000</p>
             </div>
           </div>
         </div>
