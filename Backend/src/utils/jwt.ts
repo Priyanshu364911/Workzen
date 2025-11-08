@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import config from '../config/environment';
 
 export interface JwtPayload {
@@ -14,9 +14,11 @@ export class JwtUtils {
    * Generate JWT token
    */
   static generateToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): string {
-    return jwt.sign(payload, config.JWT_SECRET, {
-      expiresIn: config.JWT_EXPIRE,
-    });
+    try {
+      return (jwt as any).sign(payload, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRE });
+    } catch (error) {
+      throw new Error('Token generation failed');
+    }
   }
 
   /**

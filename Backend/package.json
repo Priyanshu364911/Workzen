@@ -7,6 +7,7 @@
     "dev": "nodemon src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "seed": "ts-node src/utils/seedData.ts",
     "lint": "eslint src/**/*.ts",
     "test": "jest"
   },

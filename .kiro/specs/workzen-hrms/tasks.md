@@ -10,6 +10,8 @@
   - _Requirements: 8.1, 8.4_
 
 
+
+
 - [ ] 2. Implement authentication system and JWT handling
   - Create User model with password hashing using bcrypt
   - Implement JWT token generation and validation middleware

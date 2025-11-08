@@ -8,8 +8,8 @@ import rateLimit from 'express-rate-limit';
 import config from './config/environment';
 import { globalErrorHandler, AppError } from './middleware/errorHandler';
 
-// Import routes (will be created in next steps)
-// import authRoutes from './routes/auth';
+// Import routes
+import authRoutes from './routes/auth';
 // import userRoutes from './routes/users';
 // import attendanceRoutes from './routes/attendance';
 // import leaveRoutes from './routes/leaves';
@@ -85,8 +85,8 @@ class App {
       });
     });
 
-    // API routes (will be uncommented as we create them)
-    // this.app.use('/api/auth', authRoutes);
+    // API routes
+    this.app.use('/api/auth', authRoutes);
     // this.app.use('/api/users', userRoutes);
     // this.app.use('/api/attendance', attendanceRoutes);
     // this.app.use('/api/leaves', leaveRoutes);
@@ -113,7 +113,6 @@ declare global {
   namespace Express {
     interface Request {
       requestTime?: string;
-      user?: any;
     }
   }
 }
