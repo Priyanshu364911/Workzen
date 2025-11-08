@@ -33,12 +33,17 @@
   - Write unit tests for user management services
   - _Requirements: 1.4, 1.5, 1.6, 6.1, 6.2, 6.4_
 
+
+
 - [ ] 4. Create database models and migrations
   - Design and implement database schema for all entities (User, Attendance, Leave, Payroll, LeaveBalance)
   - Create database migration scripts using Knex.js or Prisma
   - Set up database relationships and foreign key constraints
   - Implement database connection pooling and error handling
   - Create seed data for testing different user roles
+
+
+
   - _Requirements: 7.3, 8.4_
 
 - [ ] 5. Implement attendance management backend

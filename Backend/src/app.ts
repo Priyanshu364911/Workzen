@@ -11,8 +11,8 @@ import { globalErrorHandler, AppError } from './middleware/errorHandler';
 // Import routes
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
-// import attendanceRoutes from './routes/attendance';
-// import leaveRoutes from './routes/leaves';
+import attendanceRoutes from './routes/attendance';
+import leaveRoutes from './routes/leaves';
 // import payrollRoutes from './routes/payroll';
 // import dashboardRoutes from './routes/dashboard';
 
@@ -88,8 +88,8 @@ class App {
     // API routes
     this.app.use('/api/auth', authRoutes);
     this.app.use('/api/users', userRoutes);
-    // this.app.use('/api/attendance', attendanceRoutes);
-    // this.app.use('/api/leaves', leaveRoutes);
+    this.app.use('/api/attendance', attendanceRoutes);
+    this.app.use('/api/leaves', leaveRoutes);
     // this.app.use('/api/payroll', payrollRoutes);
     // this.app.use('/api/dashboard', dashboardRoutes);
 
