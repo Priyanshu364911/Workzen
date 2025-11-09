@@ -9,6 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, AlertCircle } from 'lucide-react';
 import LeaveService, { LeaveApplication, LeaveBalance } from '@/services/leaveService';
 import { useToast } from '@/hooks/use-toast';
+import { useLeaveFilters } from '@/hooks/useLeaveFilters';
+import FilterBar from '@/components/FilterBar';
+import GroupedLeaveView from '@/components/GroupedLeaveView';
+import { LEAVE_TYPES, LEAVE_STATUSES } from '@/types/leaveFilters';
 
 const Leaves = () => {
   const { user } = useAuth();
@@ -24,6 +28,16 @@ const Leaves = () => {
     to: '',
     reason: ''
   });
+
+  // Initialize filter hook with leaves data
+  const {
+    filters,
+    filteredLeaves,
+    groupedLeaves,
+    updateFilter,
+    clearFilters,
+    hasActiveFilters
+  } = useLeaveFilters(leaves);
 
   useEffect(() => {
     fetchLeaves();
@@ -249,103 +263,164 @@ const Leaves = () => {
             </div>
           )}
 
-          {/* Leave Requests Table */}
-          <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
-            <div className="p-6 border-b border-border">
-              <h2 className="text-xl font-semibold text-foreground">
-                {user?.role === 'Employee' ? 'My Leave Requests' : 'Leave Requests'}
-              </h2>
-              {error && (
-                <div className="mt-2 flex items-center text-sm text-destructive">
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  {error}
-                </div>
+          {/* Filter Bar */}
+          <FilterBar
+            filters={filters}
+            onFilterChange={(newFilters) => {
+              Object.entries(newFilters).forEach(([key, value]) => {
+                updateFilter(key as keyof typeof filters, value);
+              });
+            }}
+            onClearFilters={clearFilters}
+            showEmployeeSearch={user?.role !== 'Employee'}
+            leaveTypes={LEAVE_TYPES as unknown as string[]}
+            statuses={LEAVE_STATUSES as unknown as string[]}
+          />
+
+          {/* Results Summary */}
+          <div className="mb-4 flex items-center justify-between">
+            <div 
+              className="text-sm text-muted-foreground"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              Showing <span className="font-semibold text-foreground">{filteredLeaves.length}</span> of{' '}
+              <span className="font-semibold text-foreground">{leaves.length}</span> leave request{leaves.length !== 1 ? 's' : ''}
+              {hasActiveFilters() && (
+                <span className="ml-2 text-primary">
+                  (filtered)
+                </span>
               )}
             </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted">
-                  <tr>
-                    {user?.role !== 'Employee' && (
-                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Employee</th>
-                    )}
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">From</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">To</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Days</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Reason</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
-                    {canApprove && (
-                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="bg-card divide-y divide-border">
-                  {leaves.length === 0 ? (
-                    <tr>
-                      <td colSpan={user?.role === 'Employee' ? (canApprove ? 7 : 6) : (canApprove ? 8 : 7)} className="px-6 py-8 text-center text-muted-foreground">
-                        No leave requests found
-                      </td>
-                    </tr>
-                  ) : (
-                    leaves.map((leave) => (
-                      <tr key={leave._id} className="hover:bg-accent/50">
-                        {user?.role !== 'Employee' && (
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
-                            {leave.user?.name || 'Unknown'}
-                          </td>
-                        )}
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">{leave.type}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                          {new Date(leave.from).toLocaleDateString('en-IN')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                          {new Date(leave.to).toLocaleDateString('en-IN')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                          {leave.totalDays}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground max-w-xs truncate" title={leave.reason}>
-                          {leave.reason}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            leave.status === 'Approved' ? 'bg-primary/20 text-primary' :
-                            leave.status === 'Rejected' ? 'bg-destructive/20 text-destructive' :
-                            'bg-secondary/20 text-secondary'
-                          }`}>
-                            {leave.status}
-                          </span>
-                        </td>
-                        {canApprove && (
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {leave.status === 'Pending' && (
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleLeaveAction(leave._id, 'approve')}
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => handleLeaveAction(leave._id, 'reject')}
-                                >
-                                  Reject
-                                </Button>
-                              </div>
-                            )}
-                          </td>
-                        )}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+            {error && (
+              <div 
+                className="flex items-center text-sm text-destructive"
+                role="alert"
+              >
+                <AlertCircle className="h-4 w-4 mr-2" aria-hidden="true" />
+                {error}
+              </div>
+            )}
           </div>
+
+          {/* Conditional View Rendering - Grouped or List View */}
+          {filters.groupBy !== 'none' ? (
+            // Grouped View
+            <GroupedLeaveView
+              leaves={filteredLeaves}
+              groupBy={filters.groupBy}
+              onLeaveAction={handleLeaveAction}
+              canApprove={canApprove}
+              userRole={user?.role || ''}
+            />
+          ) : (
+            // List View (Table)
+            <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+              <div className="p-6 border-b border-border">
+                <h2 className="text-xl font-semibold text-foreground">
+                  {user?.role === 'Employee' ? 'My Leave Requests' : 'Leave Requests'}
+                </h2>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      {user?.role !== 'Employee' && (
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Employee</th>
+                      )}
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Type</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">From</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">To</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Days</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Reason</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                      {canApprove && (
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-card divide-y divide-border">
+                    {filteredLeaves.length === 0 ? (
+                      <tr>
+                        <td 
+                          colSpan={user?.role === 'Employee' ? (canApprove ? 7 : 6) : (canApprove ? 8 : 7)} 
+                          className="px-6 py-12 text-center"
+                        >
+                          <div role="status" aria-live="polite">
+                            <p className="text-lg text-muted-foreground mb-2">
+                              {hasActiveFilters() ? 'No leave requests match your filters' : 'No leave requests found'}
+                            </p>
+                            {hasActiveFilters() && (
+                              <p className="text-sm text-muted-foreground">
+                                Try adjusting your filters to see more results
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredLeaves.map((leave) => (
+                        <tr key={leave._id} className="hover:bg-accent/50">
+                          {user?.role !== 'Employee' && (
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
+                              {leave.user?.name || 'Unknown'}
+                            </td>
+                          )}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">{leave.type}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                            {new Date(leave.from).toLocaleDateString('en-IN')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                            {new Date(leave.to).toLocaleDateString('en-IN')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                            {leave.totalDays}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-muted-foreground max-w-xs truncate" title={leave.reason}>
+                            {leave.reason}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              leave.status === 'Approved' ? 'bg-primary/20 text-primary' :
+                              leave.status === 'Rejected' ? 'bg-destructive/20 text-destructive' :
+                              'bg-secondary/20 text-secondary'
+                            }`}>
+                              {leave.status}
+                            </span>
+                          </td>
+                          {canApprove && (
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {leave.status === 'Pending' && (
+                                <div className="flex gap-2" role="group" aria-label="Leave request actions">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleLeaveAction(leave._id, 'approve')}
+                                    aria-label={`Approve leave request for ${leave.user?.name || 'employee'}`}
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleLeaveAction(leave._id, 'reject')}
+                                    aria-label={`Reject leave request for ${leave.user?.name || 'employee'}`}
+                                  >
+                                    Reject
+                                  </Button>
+                                </div>
+                              )}
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
