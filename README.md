@@ -2,6 +2,14 @@
 
 A comprehensive HRMS solution built with Node.js, Express, MongoDB, React, and TypeScript.
 
+
+Video Demo -- https://drive.google.com/file/d/1OYrWvjnoZxdS9wV1BLQuMoAN2xS1fGXE/view?usp=drive_link
+
+Alternate link if first one not working
+ 
+Link -- https://drive.google.com/uc?id=1OYrWvjnoZxdS9wV1BLQuMoAN2xS1fGXE&export=download
+
+
 ## Features
 
 - **User Authentication & Authorization**
