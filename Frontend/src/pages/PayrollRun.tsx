@@ -1,18 +1,22 @@
-import { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useState, useRef } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { mockUsers, mockPayslips, Payslip } from '@/data/mockData';
 import { calculatePayroll } from '@/utils/payroll';
 import { toast } from 'sonner';
-import { DollarSign } from 'lucide-react';
+import { DollarSign, Printer, Eye } from 'lucide-react';
+import PayslipPrint from '@/components/PayslipPrint';
+import { useReactToPrint } from 'react-to-print';
 
 const PayrollRun = () => {
-  const { user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState('');
   const [generatedPayslips, setGeneratedPayslips] = useState<Payslip[]>(mockPayslips);
+  const [selectedPayslip, setSelectedPayslip] = useState<Payslip | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const handleRunPayroll = () => {
     if (!selectedMonth) {
@@ -35,6 +39,15 @@ const PayrollRun = () => {
     setGeneratedPayslips([...generatedPayslips, ...newPayslips]);
     toast.success(`Payroll processed for ${newPayslips.length} employees!`);
   };
+
+  const handleViewPayslip = (payslip: Payslip) => {
+    setSelectedPayslip(payslip);
+    setIsDialogOpen(true);
+  };
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+  });
 
   return (
     <div className="flex h-screen bg-background">
@@ -102,6 +115,7 @@ const PayrollRun = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Gross Pay</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Deductions</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Net Pay</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-card divide-y divide-border">
@@ -109,7 +123,7 @@ const PayrollRun = () => {
                     const employee = mockUsers.find(u => u._id === payslip.userId);
                     const totalDeductions = payslip.pf + payslip.proTax + payslip.lop;
                     return (
-                      <tr key={payslip._id} className="hover:bg-accent/50">
+                      <tr key={payslip._id} className="hover:bg-accent/50 cursor-pointer" onClick={() => handleViewPayslip(payslip)}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                           {employee?.name}
                         </td>
@@ -125,6 +139,19 @@ const PayrollRun = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-primary">
                           ₹ {payslip.netPay.toLocaleString('en-IN')}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewPayslip(payslip);
+                            }}
+                            className="mr-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -134,6 +161,28 @@ const PayrollRun = () => {
           </div>
         </div>
       </div>
+
+      {/* Payslip Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Payslip Details</span>
+              <Button onClick={handlePrint} size="sm" variant="outline">
+                <Printer className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          {selectedPayslip && (
+            <PayslipPrint
+              ref={printRef}
+              payslip={selectedPayslip}
+              employee={mockUsers.find(u => u._id === selectedPayslip.userId)!}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

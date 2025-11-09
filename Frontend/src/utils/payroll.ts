@@ -41,10 +41,28 @@ export const calculatePayroll = (
 
   // LOP calculation: (22 - Present - Approved Leaves) × (Gross / 22)
   const workingDays = 22;
-  const absentDays = Math.max(0, workingDays - presentDays - approvedLeaveDays);
-  const lop = (absentDays * gross) / workingDays;
+  
+  // If no attendance data exists for the month, assume full attendance (no LOP)
+  // This prevents negative pay for future months or months without data
+  let absentDays = 0;
+  if (monthAttendance.length > 0) {
+    absentDays = Math.max(0, workingDays - presentDays - approvedLeaveDays);
+  }
+  
+  // Calculate LOP but ensure it doesn't exceed gross salary
+  let lop = (absentDays * gross) / workingDays;
+  
+  // Cap LOP at gross salary to prevent negative net pay from LOP alone
+  lop = Math.min(lop, gross);
 
-  const netPay = gross - pf - proTax - lop;
+  // Calculate net pay and ensure it's never negative
+  let netPay = gross - pf - proTax - lop;
+  
+  // If net pay would be negative, adjust LOP to make net pay zero
+  if (netPay < 0) {
+    lop = Math.max(0, gross - pf - proTax);
+    netPay = 0;
+  }
 
   return {
     basic: Math.round(basic),
